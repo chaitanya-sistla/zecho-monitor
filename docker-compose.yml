@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13-alpine
+    container_name: uptime_postgres
+    environment:
+      POSTGRES_USER: postgres_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: uptime_monitor
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d/
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    container_name: uptime_backend
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_USER=postgres_user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=uptime_monitor
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    ports:
+      - "8080:8080"
+    links:
+      - postgres
+
+  frontend:
+    build: ./uptime-monitor-frontend
+    container_name: uptime_frontend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+
