@@ -49,7 +49,7 @@ Make sure you have the following installed on your machine:
 3. Build and start the containers:
 
    ```bash
-   docker-compose up --build
+   docker compose up -d
    ```
 
    This will build and run the manager, frontend, and PostgreSQL containers.
