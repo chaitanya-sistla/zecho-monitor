@@ -3,6 +3,8 @@
 
 This project is a full-stack application that monitors the uptime of various websites and services. It checks the status and SSL certificate expiry of the given URLs and provides real-time updates on their status via a web interface. The application consists of a backend built with Go, a frontend developed with React, and a PostgreSQL database to store the monitoring data.
 
+![Zecho Monitor](./assets/zechomonitor.png)
+
 ## Project Structure
 
 - **manager/**: Contains the Go backend code responsible for monitoring services and interacting with the PostgreSQL database.
