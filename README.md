@@ -5,7 +5,7 @@ This project is a full-stack application that monitors the uptime of various web
 
 ## Project Structure
 
-- **backend/**: Contains the Go backend code responsible for monitoring services and interacting with the PostgreSQL database.
+- **manager/**: Contains the Go backend code responsible for monitoring services and interacting with the PostgreSQL database.
 - **db-init/**: Contains the SQL initialization script for setting up the PostgreSQL database schema.
 - **uptime-monitor-frontend/**: The React frontend that allows users to view service statuses and manage URLs being monitored.
 - **docker-compose.yml**: The configuration file for Docker to orchestrate the backend, frontend, and database services.
@@ -21,10 +21,10 @@ This project is a full-stack application that monitors the uptime of various web
 
 ## Technologies Used
 
-- **Backend**: Go (Golang)
+- **Manager**: Go (Golang)
 - **Frontend**: React, Chart.js for visualizing uptime history
 - **Database**: PostgreSQL
-- **Docker**: Containerized deployment of backend, frontend, and PostgreSQL services
+- **Docker**: Containerized deployment of manager, frontend, and PostgreSQL services
 
 ## Getting Started
 
@@ -44,7 +44,7 @@ Make sure you have the following installed on your machine:
    cd uptime-monitor
    ```
 
-2. Ensure the `docker-compose.yml` file and necessary directories (`backend`, `db-init`, `uptime-monitor-frontend`) are in place.
+2. Ensure the `docker-compose.yml` file and necessary directories (`manager`, `db-init`, `uptime-monitor-frontend`) are in place.
 
 3. Build and start the containers:
 
@@ -52,7 +52,7 @@ Make sure you have the following installed on your machine:
    docker-compose up --build
    ```
 
-   This will build and run the backend, frontend, and PostgreSQL containers.
+   This will build and run the manager, frontend, and PostgreSQL containers.
 
 ### Database Initialization
 
@@ -62,7 +62,7 @@ The database will be automatically initialized using the `db-init/init.sql` scri
 
 1. Access the application by visiting: `http://localhost` in your browser.
 2. To add a URL for monitoring, simply enter it into the input field and click "Add URL."
-3. The backend will check the status and SSL expiry of the URL, and the frontend will update in real time with the latest information.
+3. The manager will check the status and SSL expiry of the URL, and the frontend will update in real time with the latest information.
 4. You can view the history of any monitored URL by clicking the "View History" button.
 
 ### API Endpoints
@@ -76,7 +76,7 @@ The database will be automatically initialized using the `db-init/init.sql` scri
 
 The application uses the following environment variables in `docker-compose.yml`:
 
-- `POSTGRES_USER`: PostgreSQL username (default: `postgres_user`)
+- `POSTGRES_USER`: PostgreSQL username (default: `chaitanyasistla`)
 - `POSTGRES_PASSWORD`: PostgreSQL password (default: `password`)
 - `POSTGRES_DB`: PostgreSQL database name (default: `uptime_monitor`)
 - `POSTGRES_HOST`: PostgreSQL host (default: `postgres`)
@@ -100,7 +100,7 @@ This will stop and remove all running containers related to the project.
 
 ### Troubleshooting
 
-If you encounter any issues such as services not starting correctly, ensure Docker is running and that no other service is using the required ports (`8080` for backend, `5432` for PostgreSQL, `80` for frontend).
+If you encounter any issues such as services not starting correctly, ensure Docker is running and that no other service is using the required ports (`8080` for manager, `5432` for PostgreSQL, `80` for frontend).
 
 ## Contributing
 
@@ -119,4 +119,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Author
 
 - **Chaitanya Sistla** - [chaitanyasistla.com](https://chaitanyasistla.com)
-

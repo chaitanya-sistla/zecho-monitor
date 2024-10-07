@@ -28,7 +28,7 @@ function App() {
   const [services, setServices] = useState([]);
   const [error, setError] = useState('');
   const [history, setHistory] = useState([]);
-  const [selectedMonitor, setSelectedMonitor] = useState(null); // Track selected monitor
+  const [selectedMonitor, setSelectedMonitor] = useState(null); 
 
   // Function to fetch all monitors from the backend
   const fetchMonitors = () => {
@@ -45,7 +45,7 @@ function App() {
         return response.json();
       })
       .then((data) => {
-        setServices(Array.isArray(data) ? data : []); // Ensure data is an array
+        setServices(Array.isArray(data) ? data : []);
       })
       .catch((error) => {
         console.error('Error fetching monitors:', error);
@@ -53,16 +53,16 @@ function App() {
       });
   };
 
-  // Fetch monitors when the component mounts and then every 5 seconds
+  // fetch monitors when the component mounts and then every 5 seconds
   useEffect(() => {
     fetchMonitors(); // Initial fetch
     const intervalId = setInterval(() => {
       fetchMonitors();
     }, 5000);
-    return () => clearInterval(intervalId); // Clear interval on component unmount
+    return () => clearInterval(intervalId); 
   }, []);
 
-  // Function to add a new URL to the database
+  // func to add a new URL to the database
   const addUrl = () => {
     if (!url) {
       setError('Please enter a valid URL');
@@ -100,7 +100,7 @@ function App() {
       });
   };
 
-  // Function to fetch history for a monitor
+  // func to fetch history for a monitor
   const fetchHistory = (id) => {
     fetch(`http://localhost:8080/monitors/${id}/history`, {
       method: 'GET',
@@ -123,7 +123,7 @@ function App() {
       });
   };
 
-  // Function to delete a monitor by its ID
+  // func to delete a monitor by its ID
   const deleteMonitor = (id) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this monitor?");
     if (!confirmDelete) {
@@ -144,7 +144,7 @@ function App() {
       });
   };
 
-  // Function to prepare data for the chart
+  // func to prepare data for the chart
   const prepareChartData = () => {
     if (!history || history.length === 0) return;
 
@@ -203,4 +203,3 @@ function App() {
 }
 
 export default App;
-
