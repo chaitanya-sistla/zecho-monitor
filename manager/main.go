@@ -17,7 +17,7 @@ import (
     "github.com/go-chi/cors"
 )
 
-// Create a function to generate the connection string dynamically
+// this function to generate connection string
 func getConnectionString() string {
     return fmt.Sprintf(
         "postgres://%s:%s@%s:%s/%s?sslmode=disable",
@@ -31,7 +31,6 @@ func getConnectionString() string {
 
 var db *sql.DB
 
-// Service represents a monitored service
 type Service struct {
 	ID          int       `json:"id"`
 	URL         string    `json:"url"`
@@ -40,7 +39,7 @@ type Service struct {
 	LastChecked time.Time `json:"last_checked"`
 }
 
-// AddProtocol ensures the URL has a protocol (http/https)
+// making sure https or http is appended
 func AddProtocol(url string) string {
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		return "https://" + url
@@ -48,7 +47,7 @@ func AddProtocol(url string) string {
 	return url
 }
 
-// CheckService performs a GET request and checks if the service is up
+// verify service is up
 func CheckService(service *Service) {
 	url := AddProtocol(service.URL)
 	log.Printf("Checking service for URL: %s\n", url)
@@ -74,7 +73,7 @@ func CheckService(service *Service) {
 	service.LastChecked = time.Now()
 }
 
-// CheckSSLExpiry checks SSL certificate expiry
+// checks SSL certificate expiry
 func CheckSSLExpiry(service *Service) {
 	log.Printf("Checking SSL expiry for URL: %s\n", service.URL)
 
@@ -100,7 +99,7 @@ func CheckSSLExpiry(service *Service) {
 	}
 }
 
-// GetMonitors retrieves all monitors from the database
+// retrieves all monitors from the database
 func GetMonitors(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query("SELECT id, url, status, ssl_expiry, last_checked FROM monitors")
 	if err != nil {
@@ -124,7 +123,7 @@ func GetMonitors(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(services)
 }
 
-// AddMonitor adds a new monitor to the database
+// adds a new monitor to the database
 func AddMonitor(w http.ResponseWriter, r *http.Request) {
 	var service Service
 	err := json.NewDecoder(r.Body).Decode(&service)
@@ -133,11 +132,11 @@ func AddMonitor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check the service and SSL expiry
+	// to chek the service and SSL expiry
 	CheckService(&service)
 	CheckSSLExpiry(&service)
 
-	// Insert into the database
+	// insert to the database
 	err = db.QueryRow(
 		"INSERT INTO monitors (url, status, ssl_expiry, last_checked) VALUES ($1, $2, $3, $4) RETURNING id",
 		service.URL, service.Status, service.SSLExpiry, service.LastChecked,
@@ -153,7 +152,7 @@ func AddMonitor(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(service)
 }
 
-// Background task to check all services every 5 seconds
+// bg task to check all services every 5 seconds
 func startBackgroundCheck() {
     for {
         // Wait 5 seconds before checking all services again
@@ -177,11 +176,11 @@ func startBackgroundCheck() {
                 continue
             }
 
-            // Check service and SSL expiry
+            // check service and SSL expiry
             CheckService(&service)
             CheckSSLExpiry(&service)
 
-            // Update the monitor in the database
+            // update the monitor in the database
             _, err = db.Exec("UPDATE monitors SET status=$1, ssl_expiry=$2, last_checked=$3 WHERE id=$4",
                 service.Status, service.SSLExpiry, service.LastChecked, service.ID)
             if err != nil {
@@ -189,7 +188,7 @@ func startBackgroundCheck() {
                 continue
             }
 
-            // Insert into monitor_history table to keep track of history
+            // insert into monitor_history table to keep track of history
             _, err = db.Exec("INSERT INTO monitor_history (monitor_id, status, ssl_expiry, checked_at) VALUES ($1, $2, $3, $4)",
                 service.ID, service.Status, service.SSLExpiry, service.LastChecked)
             if err != nil {
@@ -201,7 +200,7 @@ func startBackgroundCheck() {
     }
 }
 
-// GetMonitorHistory retrieves historical data for a specific monitor
+//  retrieves historical data for a specific monitor
 func GetMonitorHistory(w http.ResponseWriter, r *http.Request) {
     id := chi.URLParam(r, "id")
     log.Printf("Received request for monitor history. ID: %s", id) // Debug log
@@ -249,25 +248,25 @@ func GetMonitorHistory(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(history)
 }
 
-// DeleteMonitor removes a monitor from the database
+// removes a monitor from the database
 func DeleteMonitor(w http.ResponseWriter, r *http.Request) {
     id := chi.URLParam(r, "id")
 
-    // First, delete the associated history entries
+    //  delete the associated history entries
     _, err := db.Exec("DELETE FROM monitor_history WHERE monitor_id=$1", id)
     if err != nil {
         http.Error(w, "Failed to delete monitor history", http.StatusInternalServerError)
         return
     }
 
-    // Then, delete the monitor from the monitors table
+    //  delete the monitor from the monitors table
     result, err := db.Exec("DELETE FROM monitors WHERE id=$1", id)
     if err != nil {
         http.Error(w, "Failed to delete monitor", http.StatusInternalServerError)
         return
     }
 
-    // Check if any row was deleted
+    // check if any row was deleted
     rowsAffected, err := result.RowsAffected()
     if err != nil || rowsAffected == 0 {
         http.Error(w, "Monitor not found", http.StatusNotFound)
@@ -280,7 +279,7 @@ func DeleteMonitor(w http.ResponseWriter, r *http.Request) {
 func main() {
     var err error
 
-    // Use the function to get the connection string
+    // use the function to get the connection string
     connStr := getConnectionString()
 
     db, err = sql.Open("postgres", connStr)
@@ -303,7 +302,7 @@ func main() {
         MaxAge:           300,                                                   // Cache preflight requests
     })
 
-    // Middleware must be added BEFORE routes
+    //  must be added before routes
     r.Use(corsHandler.Handler)
 
     // Preflight OPTIONS handler for CORS

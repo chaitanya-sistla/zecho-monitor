@@ -14,9 +14,9 @@ services:
     ports:
       - "5432:5432"
 
-  backend:
-    build: ./backend
-    container_name: uptime_backend
+  manager:
+    build: ./manager
+    container_name: uptime_manager
     depends_on:
       - postgres
     environment:
