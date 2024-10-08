@@ -90,6 +90,12 @@ These are automatically configured through Docker Compose.
 
 You can monitor websites like `https://example.com` and track their SSL certificate expiration.
 
+### Application Interface
+
+<img width="523" alt="image" src="https://github.com/user-attachments/assets/73016151-63db-4e7b-97b1-1bc4562af309">
+<img width="523" alt="image" src="https://github.com/user-attachments/assets/6408061c-14d2-438f-a9d2-a5afa9a42213">
+<img width="523" alt="image" src="https://github.com/user-attachments/assets/80776939-6a1a-4cb4-8ec1-d11291d73a0f">
+
 ### Stopping the Application
 
 To stop the running containers, run:
