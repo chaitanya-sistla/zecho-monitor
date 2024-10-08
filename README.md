@@ -93,8 +93,9 @@ You can monitor websites like `https://example.com` and track their SSL certific
 ### Application Interface
 
 <img width="523" alt="image" src="https://github.com/user-attachments/assets/73016151-63db-4e7b-97b1-1bc4562af309">
-<img width="523" alt="image" src="https://github.com/user-attachments/assets/6408061c-14d2-438f-a9d2-a5afa9a42213">
-<img width="523" alt="image" src="https://github.com/user-attachments/assets/80776939-6a1a-4cb4-8ec1-d11291d73a0f">
+<img width="523" alt="image" src="https://github.com/user-attachments/assets/affc539f-387e-4e92-a462-b0ae907d9bd1">
+<img width="523" alt="image" src="https://github.com/user-attachments/assets/b9f70edd-b5c6-42f2-8a05-25a6b948275e">
+<img width="1060" alt="image" src="https://github.com/user-attachments/assets/7d909cdc-183f-4834-9f53-f1f36266cf40">
 
 ### Stopping the Application
 
