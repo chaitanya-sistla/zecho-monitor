@@ -14,12 +14,16 @@ This project is a full-stack application that monitors the uptime of various web
 
 ## Features
 
-- Monitor websites and services for uptime.
-- Check SSL certificate expiry.
-- Real-time status updates.
-- Add, view, and delete monitored URLs.
-- View historical uptime data for each monitored URL.
-- Built with Docker for easy deployment.
+- Register and login operation
+- Improved styles for the UI
+- Color code for Uptime and Downtime
+- Monitor websites and services for uptime
+- Check SSL certificate expiry
+- Real-time status updates
+- Add, view, and delete monitored URLs
+- View historical uptime data for each monitored URL
+- Enhanced logging for debugging
+- Built with Docker for easy deployment
 
 ## Technologies Used
 
