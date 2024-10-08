@@ -5,7 +5,7 @@ services:
     image: postgres:13-alpine
     container_name: uptime_postgres
     environment:
-      POSTGRES_USER: postgres_user
+      POSTGRES_USER: chaitanyasistla
       POSTGRES_PASSWORD: password
       POSTGRES_DB: uptime_monitor
     volumes:
@@ -20,7 +20,7 @@ services:
     depends_on:
       - postgres
     environment:
-      - POSTGRES_USER=postgres_user
+      - POSTGRES_USER=chaitanyasistla
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=uptime_monitor
       - POSTGRES_HOST=postgres

@@ -12,7 +12,6 @@ import {
 } from 'chart.js';
 import './App.css';
 
-// Register chart components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -28,14 +27,56 @@ function App() {
   const [services, setServices] = useState([]);
   const [error, setError] = useState('');
   const [history, setHistory] = useState([]);
-  const [selectedMonitor, setSelectedMonitor] = useState(null); 
+  const [selectedMonitor, setSelectedMonitor] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token') || ''); // Store JWT token
+  const [isRegistering, setIsRegistering] = useState(false); // Handle registration vs login mode
+  const [successMessage, setSuccessMessage] = useState(''); // Store success messages like registration success
 
-  // Function to fetch all monitors from the backend
+  // Function to register a new user
+  const register = async (username, password) => {
+    const response = await fetch('http://localhost:8080/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
+    if (response.ok) {
+      setSuccessMessage('User registered successfully. Please log in.');
+      setIsRegistering(false);
+    } else {
+      const data = await response.json();
+      console.error('Registration failed:', data.message);
+      setError('Registration failed');
+    }
+  };
+
+  // Function to login and get JWT token
+  const login = async (username, password) => {
+    const response = await fetch('http://localhost:8080/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await response.json();
+    if (response.ok && data.token) {
+      localStorage.setItem('token', data.token); // Store token in localStorage
+      setToken(data.token);
+    } else {
+      console.error('Login failed:', data.message);
+      setError('Login failed');
+    }
+  };
+
+  // Fetch monitors
   const fetchMonitors = () => {
     fetch('http://localhost:8080/monitors', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`, // Pass JWT token in the Authorization header
       },
     })
       .then((response) => {
@@ -53,16 +94,18 @@ function App() {
       });
   };
 
-  // fetch monitors when the component mounts and then every 5 seconds
+  // Fetch monitors when the component mounts and then every 5 seconds
   useEffect(() => {
-    fetchMonitors(); // Initial fetch
-    const intervalId = setInterval(() => {
+    if (token) {
       fetchMonitors();
-    }, 5000);
-    return () => clearInterval(intervalId); 
-  }, []);
+      const intervalId = setInterval(() => {
+        fetchMonitors();
+      }, 5000);
+      return () => clearInterval(intervalId);
+    }
+  }, [token]);
 
-  // func to add a new URL to the database
+  // Add a new monitor
   const addUrl = () => {
     if (!url) {
       setError('Please enter a valid URL');
@@ -80,6 +123,7 @@ function App() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`, // Pass JWT token
       },
       body: JSON.stringify(newService),
     })
@@ -100,12 +144,13 @@ function App() {
       });
   };
 
-  // func to fetch history for a monitor
+  // Fetch history for a monitor
   const fetchHistory = (id) => {
     fetch(`http://localhost:8080/monitors/${id}/history`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`, // Pass JWT token
       },
     })
       .then((response) => {
@@ -115,45 +160,48 @@ function App() {
         return response.json();
       })
       .then((data) => {
-        setHistory(Array.isArray(data) ? data : []); // Ensure data is an array
-        setSelectedMonitor(id); // Set the selected monitor for displaying history
+        setHistory(Array.isArray(data) ? data : []);
+        setSelectedMonitor(id);
       })
       .catch((error) => {
         console.error('Error fetching monitor history:', error);
       });
   };
 
-  // func to delete a monitor by its ID
+  // Delete a monitor
   const deleteMonitor = (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this monitor?");
+    const confirmDelete = window.confirm('Are you sure you want to delete this monitor?');
     if (!confirmDelete) {
       return;
     }
 
     fetch(`http://localhost:8080/monitors/${id}`, {
       method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`, // Pass JWT token
+      },
     })
       .then((response) => {
         if (!response.ok) {
           throw new Error('Failed to delete monitor');
         }
-        setServices((prevServices) => prevServices.filter((service) => service.id !== id)); // Remove from UI
+        setServices((prevServices) => prevServices.filter((service) => service.id !== id));
       })
       .catch((error) => {
         console.error('Error deleting monitor:', error);
       });
   };
 
-  // func to prepare data for the chart
+  // Prepare chart data
   const prepareChartData = () => {
     if (!history || history.length === 0) return;
 
     return {
-      labels: history.map((entry) => new Date(entry.checked_at).toLocaleTimeString()), // X-axis labels
+      labels: history.map((entry) => new Date(entry.checked_at).toLocaleTimeString()),
       datasets: [
         {
           label: 'Monitor Status Over Time',
-          data: history.map((entry) => (entry.status === 'UP' ? 1 : 0)), // Y-axis values (UP=1, DOWN=0)
+          data: history.map((entry) => (entry.status === 'UP' ? 1 : 0)),
           fill: false,
           borderColor: 'blue',
         },
@@ -167,35 +215,80 @@ function App() {
         <h1>Uptime Monitor</h1>
       </header>
       <div className="App-content">
-        <input
-          type="text"
-          placeholder="Enter URL"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-        />
-        <button onClick={addUrl}>Add URL</button>
-
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-
-        <div className="service-statuses">
-          {services.length === 0 && <p>No URLs added yet.</p>}
-          {services.map((service, index) => (
-            <div key={index} className="service">
-              <h2>{service.url}</h2>
-              <p>Status: {service.status}</p>
-              <p>SSL Expiry: {service.ssl_expiry}</p>
-              <p>Last Checked: {new Date(service.last_checked).toLocaleString()}</p>
-              <button onClick={() => deleteMonitor(service.id)}>Delete</button> {/* Delete button */}
-              <button onClick={() => fetchHistory(service.id)}>View History</button> {/* View history button */}
-            </div>
-          ))}
-        </div>
-
-        {selectedMonitor && history && history.length > 0 && (
-          <div className="monitor-history">
-            <h3>Monitor History</h3>
-            <Line data={prepareChartData()} /> {/* Line chart to display history */}
+        {!token && (
+          <div>
+            {isRegistering ? (
+              <>
+                <h2>Register</h2>
+                <input type="text" placeholder="Username" id="register-username" />
+                <input type="password" placeholder="Password" id="register-password" />
+                <button
+                  onClick={() =>
+                    register(
+                      document.getElementById('register-username').value,
+                      document.getElementById('register-password').value
+                    )
+                  }
+                >
+                  Register
+                </button>
+                <button onClick={() => setIsRegistering(false)}>Go to Login</button>
+              </>
+            ) : (
+              <>
+                <h2>Login</h2>
+                <input type="text" placeholder="Username" id="login-username" />
+                <input type="password" placeholder="Password" id="login-password" />
+                <button
+                  onClick={() =>
+                    login(
+                      document.getElementById('login-username').value,
+                      document.getElementById('login-password').value
+                    )
+                  }
+                >
+                  Login
+                </button>
+                <button onClick={() => setIsRegistering(true)}>Go to Register</button>
+              </>
+            )}
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
           </div>
+        )}
+        {token && (
+          <>
+            <input
+              type="text"
+              placeholder="Enter URL"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+            <button onClick={addUrl}>Add URL</button>
+
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+
+            <div className="service-statuses">
+              {services.length === 0 && <p>No URLs added yet.</p>}
+              {services.map((service, index) => (
+                <div key={index} className="service">
+                  <h2>{service.url}</h2>
+                  <p>Status: {service.status}</p>
+                  <p>SSL Expiry: {service.ssl_expiry}</p>
+                  <p>Last Checked: {new Date(service.last_checked).toLocaleString()}</p>
+                  <button onClick={() => deleteMonitor(service.id)}>Delete</button>
+                  <button onClick={() => fetchHistory(service.id)}>View History</button>
+                </div>
+              ))}
+            </div>
+
+            {selectedMonitor && history && history.length > 0 && (
+              <div className="monitor-history">
+                <h3>Monitor History</h3>
+                <Line data={prepareChartData()} />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
