@@ -15,6 +15,8 @@ import (
     _ "github.com/lib/pq"
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/cors"
+    "github.com/dgrijalva/jwt-go"
+    "golang.org/x/crypto/bcrypt"
 )
 
 // this function to generate connection string
@@ -38,6 +40,93 @@ type Service struct {
 	SSLExpiry   string    `json:"ssl_expiry"`
 	LastChecked time.Time `json:"last_checked"`
 }
+
+// JWT Secret Key
+var jwtSecret = []byte("your_secret_key")
+
+type Credentials struct {
+    Username string `json:"username"`
+    Password string `json:"password"`
+}
+
+// Define User struct
+type User struct {
+    ID       int
+    Username string
+    Password string // Hashed password
+}
+
+// Create JWT token
+func createToken(username string) (string, error) {
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+        "username": username,
+        "exp":      time.Now().Add(time.Hour * 24).Unix(), // 1 day expiration
+    })
+    return token.SignedString(jwtSecret)
+}
+
+// Authenticate user and return JWT token
+func login(w http.ResponseWriter, r *http.Request) {
+    var creds Credentials
+    err := json.NewDecoder(r.Body).Decode(&creds)
+    if err != nil {
+        w.WriteHeader(http.StatusBadRequest)
+        return
+    }
+
+    var storedCreds User
+    err = db.QueryRow("SELECT id, username, password FROM users WHERE username=$1", creds.Username).Scan(&storedCreds.ID, &storedCreds.Username, &storedCreds.Password)
+    if err != nil {
+        w.WriteHeader(http.StatusUnauthorized)
+        return
+    }
+
+    // Compare stored hashed password with the provided password
+    err = bcrypt.CompareHashAndPassword([]byte(storedCreds.Password), []byte(creds.Password))
+    if err != nil {
+        w.WriteHeader(http.StatusUnauthorized)
+        return
+    }
+
+    // If password matches, create a JWT token
+    token, err := createToken(creds.Username)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+
+    json.NewEncoder(w).Encode(map[string]string{"token": token})
+}
+
+// Register function to handle user registration
+func Register(w http.ResponseWriter, r *http.Request) {
+    var user User
+    err := json.NewDecoder(r.Body).Decode(&user)
+    if err != nil {
+        w.WriteHeader(http.StatusBadRequest)
+        json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request payload"})
+        return
+    }
+
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]string{"error": "Error hashing password"})
+        return
+    }
+
+    _, err = db.Exec("INSERT INTO users (username, password) VALUES ($1, $2)", user.Username, string(hashedPassword))
+    if err != nil {
+        log.Printf("Error inserting user: %v", err) // This logs the exact error
+        http.Error(w, "Error inserting user into the database", http.StatusInternalServerError)
+        return 
+    }
+
+
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"})
+}
+
 
 // making sure https or http is appended
 func AddProtocol(url string) string {
@@ -276,10 +365,10 @@ func DeleteMonitor(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusNoContent) // Successfully deleted
 }
 
+// Main function with route setup
 func main() {
     var err error
 
-    // use the function to get the connection string
     connStr := getConnectionString()
 
     db, err = sql.Open("postgres", connStr)
@@ -294,15 +383,13 @@ func main() {
 
     // CORS settings
     corsHandler := cors.New(cors.Options{
-        AllowedOrigins:   []string{"http://localhost", "http://localhost:3000"}, // Allow frontend origin
-        AllowedMethods:   []string{"GET", "POST", "DELETE", "OPTIONS"},          // Allow these methods including OPTIONS
+        AllowedOrigins:   []string{"http://localhost", "http://localhost:3000"},
+        AllowedMethods:   []string{"GET", "POST", "DELETE", "OPTIONS"},
         AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-        ExposedHeaders:   []string{"Link"},                                      // Expose certain headers to the frontend
-        AllowCredentials: true,                                                  // If you need credentials
-        MaxAge:           300,                                                   // Cache preflight requests
+        ExposedHeaders:   []string{"Link"},
+        AllowCredentials: true,
+        MaxAge:           300,
     })
-
-    //  must be added before routes
     r.Use(corsHandler.Handler)
 
     // Preflight OPTIONS handler for CORS
@@ -310,11 +397,15 @@ func main() {
         w.WriteHeader(http.StatusOK)
     })
 
-    // Routes
-    r.Get("/monitors", GetMonitors)             // Fetch all monitors
-    r.Post("/monitors", AddMonitor)             // Add a new monitor
-    r.Delete("/monitors/{id}", DeleteMonitor)   // Delete a monitor
-    r.Get("/monitors/{id}/history", GetMonitorHistory) // Fetch monitor history
+    // Register and login routes
+    r.Post("/register", Register) // Registration route
+    r.Post("/login", login)       // Login route
+
+    // Monitor-related routes (ensure JWT auth is verified for these routes)
+    r.Get("/monitors", GetMonitors)
+    r.Post("/monitors", AddMonitor)
+    r.Delete("/monitors/{id}", DeleteMonitor)
+    r.Get("/monitors/{id}/history", GetMonitorHistory)
 
     // Start the background checking task
     go startBackgroundCheck()
@@ -325,4 +416,3 @@ func main() {
         log.Fatalf("Failed to start server: %v\n", err)
     }
 }
-
