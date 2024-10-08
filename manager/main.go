@@ -103,28 +103,30 @@ func Register(w http.ResponseWriter, r *http.Request) {
     var user User
     err := json.NewDecoder(r.Body).Decode(&user)
     if err != nil {
-        http.Error(w, "Invalid request payload", http.StatusBadRequest)
+        w.WriteHeader(http.StatusBadRequest)
+        json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request payload"})
         return
     }
 
-    // Hash the password before storing
     hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
     if err != nil {
-        http.Error(w, "Error hashing password", http.StatusInternalServerError)
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]string{"error": "Error hashing password"})
         return
     }
 
-    // Insert the user into the database
     _, err = db.Exec("INSERT INTO users (username, password) VALUES ($1, $2)", user.Username, string(hashedPassword))
     if err != nil {
-        log.Printf("Error inserting user: %v", err)
+        log.Printf("Error inserting user: %v", err) // This logs the exact error
         http.Error(w, "Error inserting user into the database", http.StatusInternalServerError)
-        return
+        return 
     }
+
 
     w.WriteHeader(http.StatusCreated)
     json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"})
 }
+
 
 // making sure https or http is appended
 func AddProtocol(url string) string {

@@ -11,6 +11,13 @@ BEGIN
 END
 $$;
 
+-- Create users table
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL
+);
+
 -- Create monitors table
 CREATE TABLE IF NOT EXISTS monitors (
     id SERIAL PRIMARY KEY,

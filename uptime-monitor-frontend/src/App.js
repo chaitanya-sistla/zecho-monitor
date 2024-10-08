@@ -32,8 +32,30 @@ function App() {
   const [isRegistering, setIsRegistering] = useState(false); // Handle registration vs login mode
   const [successMessage, setSuccessMessage] = useState(''); // Store success messages like registration success
 
-  // Function to register a new user
-  const register = async (username, password) => {
+  // Validation error messages
+  const [formError, setFormError] = useState('');
+
+// Function to validate registration form
+const validateRegistration = (username, password) => {
+  if (!username || !password) {
+    setFormError("Username and password are required.");
+    return false;
+  }
+  if (password.length < 7) {
+    setFormError("Password must be at least 7 characters long.");
+    return false;
+  }
+  setFormError(''); // Clear error if validation passes
+  return true;
+};
+
+// Function to register a new user
+const register = async (username, password) => {
+  if (!validateRegistration(username, password)) {
+    return; // Stop registration if validation fails
+  }
+
+  try {
     const response = await fetch('http://localhost:8080/register', {
       method: 'POST',
       headers: {
@@ -41,18 +63,39 @@ function App() {
       },
       body: JSON.stringify({ username, password }),
     });
+
     if (response.ok) {
-      setSuccessMessage('User registered successfully. Please log in.');
-      setIsRegistering(false);
+      const data = await response.json(); // Parse as JSON on success
+      setSuccessMessage("Registration successful");
+      console.log("Registration successful:", data);
     } else {
-      const data = await response.json();
-      console.error('Registration failed:', data.message);
-      setError('Registration failed');
+      const contentType = response.headers.get('content-type');
+      let errorMessage;
+
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        errorMessage = errorData.error || 'Registration failed';
+      } else {
+        errorMessage = await response.text();
+      }
+
+      console.error("Registration failed:", errorMessage);
+      setError(errorMessage);
     }
-  };
+  } catch (error) {
+    console.error("Error during registration:", error);
+    setError("An unexpected error occurred");
+  }
+};
+
 
   // Function to login and get JWT token
   const login = async (username, password) => {
+    if (!username || !password) {
+      setFormError("Username and password are required.");
+      return;
+    }
+
     const response = await fetch('http://localhost:8080/login', {
       method: 'POST',
       headers: {
@@ -64,6 +107,7 @@ function App() {
     if (response.ok && data.token) {
       localStorage.setItem('token', data.token); // Store token in localStorage
       setToken(data.token);
+      setFormError(''); // Clear form errors on successful login
     } else {
       console.error('Login failed:', data.message);
       setError('Login failed');
@@ -252,8 +296,9 @@ function App() {
                 <button onClick={() => setIsRegistering(true)}>Go to Register</button>
               </>
             )}
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
+            {formError && <p className="error-message">{formError}</p>}
+            {error && <p className="error-message">{error}</p>}
+            {successMessage && <p className="success-message">{successMessage}</p>}
           </div>
         )}
         {token && (
@@ -273,7 +318,10 @@ function App() {
               {services.map((service, index) => (
                 <div key={index} className="service">
                   <h2>{service.url}</h2>
-                  <p>Status: {service.status}</p>
+                  <p>Status: 
+                    <span className={`status-indicator ${service.status === 'UP' ? 'up' : 'down'}`}></span> {/* Status indicator */}
+                    {service.status}
+                  </p>
                   <p>SSL Expiry: {service.ssl_expiry}</p>
                   <p>Last Checked: {new Date(service.last_checked).toLocaleString()}</p>
                   <button onClick={() => deleteMonitor(service.id)}>Delete</button>
@@ -282,12 +330,16 @@ function App() {
               ))}
             </div>
 
+
             {selectedMonitor && history && history.length > 0 && (
               <div className="monitor-history">
                 <h3>Monitor History</h3>
                 <Line data={prepareChartData()} />
               </div>
             )}
+            <button className="logout-button" onClick={() => { localStorage.removeItem('token'); setToken(''); }}>
+              Logout
+            </button>
           </>
         )}
       </div>
