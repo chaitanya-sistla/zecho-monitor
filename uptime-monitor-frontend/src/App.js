@@ -34,7 +34,7 @@ function App() {
 
   // Validation error messages
   const [formError, setFormError] = useState('');
-
+///adding sometjong
 // Function to validate registration form
 const validateRegistration = (username, password) => {
   if (!username || !password) {
