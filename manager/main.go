@@ -383,7 +383,7 @@ func main() {
 
     // CORS settings
     corsHandler := cors.New(cors.Options{
-        AllowedOrigins:   []string{"http://localhost", "http://localhost:3000"},
+        AllowedOrigins:   []string{"http://localhost", "http://localhost:3000", "http://localhost:3000/login", "http://localhost:3000/signup"},
         AllowedMethods:   []string{"GET", "POST", "DELETE", "OPTIONS"},
         AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
         ExposedHeaders:   []string{"Link"},
